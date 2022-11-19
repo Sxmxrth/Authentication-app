@@ -2,15 +2,20 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const ejs = require("ejs")
 const mongoose = require("mongoose")
+const encrypt = require("mongoose-encryption")
 
 const app = express()
 
 mongoose.connect("mongodb://0.0.0.0:27017/userDB", {useNewUrlParser : true})
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
     email : String,
     password : String
-}
+})
+
+const secret = "Thisisourlittlesecret."
+
+userSchema.plugin(encrypt, { secret : secret, encryptedFields : ["password"]})
 
 const User = new mongoose.model("User", userSchema)
 
@@ -35,12 +40,14 @@ app.post("/register", (req, res) => {
         email : req.body.username,
         password : req.body.password
     })
+    //during save, the encryption of the password is done
     newUser.save((err) => {
         err ? console.log(err) : res.render("secrets");
     })
 })
 
 app.post("/login", (req, res) => {
+    //during find, decryption of the password is done
     User.find({email : req.body.username}, (err, docs) => {
         if(err){
             console.log(err);
